@@ -34,26 +34,29 @@ import { Footer } from "@/components/layout/footer";
 import { Link } from "wouter";
 import { registerSchema } from "@/hooks/use-auth";
 
-export default function RegisterPage() {
+export default function Register() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
-  const initialUserType = searchParams.get("type") || "worker";
-  
-  const [userType, setUserType] = useState<"worker" | "employer">(initialUserType as "worker" | "employer");
+  const requestedUserType = searchParams.get("type");
+  const [userType, setUserType] = useState<"worker" | "employer">(
+    requestedUserType === "employer" ? "employer" : "worker"
+  );
   
   const { user, registerMutation } = useAuth();
   
-  // If user is already logged in, redirect to appropriate dashboard
+  // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      if (user.userType === "worker") {
-        setLocation("/worker-dashboard");
-      } else {
-        setLocation("/employer-dashboard");
-      }
+      const redirectPath =
+        user.userType === "worker"
+          ? "/worker-dashboard"
+          : user.userType === "employer"
+            ? "/employer-dashboard"
+            : "/admin-dashboard";
+      setLocation(redirectPath);
     }
   }, [user, setLocation]);
-  
+
   // Register form setup
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -71,19 +74,30 @@ export default function RegisterPage() {
   });
   
   // Update form when userType changes
-  useEffect(() => {
-    registerForm.setValue("userType", userType);
-    if (userType === "worker") {
+  const handleUserTypeChange = (type: "worker" | "employer") => {
+    setUserType(type);
+    registerForm.setValue("userType", type);
+    if (type === "worker") {
       registerForm.setValue("primarySkill", "construction");
     } else {
       registerForm.unregister("primarySkill");
     }
-  }, [userType, registerForm]);
+  };
   
   const handleRegister = (data: z.infer<typeof registerSchema>) => {
-    console.log("Form submitted with data:", data);
     registerMutation.mutate(data);
   };
+
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-gray-600">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
   
   const skillOptions = [
     { value: "construction", label: "Construction Worker" },
@@ -106,7 +120,7 @@ export default function RegisterPage() {
             <Card className="w-full shadow-lg">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold text-center">
-                  Join WorkBuddy
+                  Join Kaam Mitra
                 </CardTitle>
                 <CardDescription className="text-center">
                   Create an account to get started
@@ -118,14 +132,16 @@ export default function RegisterPage() {
                     <Button
                       variant={userType === "worker" ? "default" : "outline"}
                       className={`rounded-l-md ${userType === "worker" ? "bg-primary" : ""}`}
-                      onClick={() => setUserType("worker")}
+                      onClick={() => handleUserTypeChange("worker")}
+                      type="button"
                     >
                       I'm a Worker
                     </Button>
                     <Button
                       variant={userType === "employer" ? "default" : "outline"}
                       className={`rounded-r-md ${userType === "employer" ? "bg-[#FFA500]" : ""}`}
-                      onClick={() => setUserType("employer")}
+                      onClick={() => handleUserTypeChange("employer")}
+                      type="button"
                     >
                       I'm an Employer
                     </Button>
@@ -239,7 +255,7 @@ export default function RegisterPage() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Create a password" {...field} />
+                            <Input type="password" autoComplete="new-password" placeholder="Create a password" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -252,7 +268,7 @@ export default function RegisterPage() {
                           <FormItem>
                             <FormLabel>Confirm Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Confirm your password" {...field} />
+                            <Input type="password" autoComplete="new-password" placeholder="Confirm your password" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -280,7 +296,7 @@ export default function RegisterPage() {
                       {registerMutation.isPending ? "Creating Account..." : `Register as ${userType === "worker" ? "Worker" : "Employer"}`}
                     </Button>
                     <p className="text-center text-sm text-muted-foreground">
-                      You'll receive a WhatsApp message to verify your account
+                      You'll receive a verification message to confirm your account
                     </p>
                     <div className="text-center mt-4">
                       <p className="text-sm text-muted-foreground">
@@ -305,7 +321,7 @@ export default function RegisterPage() {
               </h1>
               <div className="space-y-6">
                 <div className="flex items-start">
-                  <span className="material-icons text-green-500 mr-3">check_circle</span>
+                  <div className="text-green-500 mr-3">✓</div>
                   <p className="text-lg">
                     {userType === "worker"
                       ? "Get notified about job opportunities in your locality"
@@ -314,7 +330,7 @@ export default function RegisterPage() {
                   </p>
                 </div>
                 <div className="flex items-start">
-                  <span className="material-icons text-green-500 mr-3">check_circle</span>
+                  <div className="text-green-500 mr-3">✓</div>
                   <p className="text-lg">
                     {userType === "worker"
                       ? "Build your reputation with ratings from employers"
@@ -323,7 +339,7 @@ export default function RegisterPage() {
                   </p>
                 </div>
                 <div className="flex items-start">
-                  <span className="material-icons text-green-500 mr-3">check_circle</span>
+                  <div className="text-green-500 mr-3">✓</div>
                   <p className="text-lg">
                     {userType === "worker"
                       ? "Connect directly with employers through WhatsApp"

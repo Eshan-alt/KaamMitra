@@ -1,215 +1,161 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ShieldCheck, Users, BriefcaseBusiness, Flag, FileCheck2 } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Loader2, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
+type Overview = { users: number; jobs: number; openReports: number };
+type Report = {
+  id: number;
+  reason: string;
+  details: string | null;
+  status: "open" | "reviewing" | "resolved" | "dismissed";
+  createdAt: string;
+};
+type Verification = {
+  id: number;
+  userId: number;
+  documentType: string;
+  status: "pending" | "verified" | "rejected";
+  submittedAt: string;
+  reviewedAt: string | null;
+  verificationNotes: string | null;
+};
+
 export default function AdminPage() {
-  const { user } = useAuth();
   const { toast } = useToast();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
-  const [isDeletionComplete, setIsDeletionComplete] = useState(false);
-  const [upiId, setUpiId] = useState("");
-  const [isSavingUpi, setIsSavingUpi] = useState(false);
+  const overview = useQuery<Overview>({ queryKey: ["/api/admin/overview"] });
+  const reports = useQuery<Report[]>({ queryKey: ["/api/admin/reports"] });
+  const verifications = useQuery<Verification[]>({ queryKey: ["/api/admin/verifications"] });
+  const moderate = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: "reviewing" | "resolved" | "dismissed" }) => {
+      const response = await apiRequest("PATCH", `/api/admin/reports/${id}`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/overview"] });
+      toast({ title: "Report updated" });
+    },
+    onError: (error: Error) => toast({ title: "Update failed", description: error.message, variant: "destructive" }),
+  });
+  const reviewVerification = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: "verified" | "rejected" }) => {
+      const response = await apiRequest("PATCH", `/api/admin/verifications/${id}`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/verifications"] });
+      toast({ title: "Verification updated" });
+    },
+    onError: (error: Error) => toast({ title: "Verification update failed", description: error.message, variant: "destructive" }),
+  });
 
-  const handleDeleteAllUsers = async () => {
-    if (deleteConfirmation !== "DELETE ALL") {
-      toast({
-        title: "Confirmation failed",
-        description: "Please type DELETE ALL to confirm this action",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      const response = await apiRequest("POST", "/api/admin/delete-all-users");
-      if (response.ok) {
-        setIsDeletionComplete(true);
-        toast({
-          title: "Success",
-          description: "All user data has been deleted",
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete data");
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete user data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleSaveUpiId = async () => {
-    if (!upiId.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid UPI ID",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSavingUpi(true);
-    try {
-      // Make a real API call to save the UPI ID
-      const response = await apiRequest("POST", "/api/payment/upi", { upiId });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save UPI ID");
-      }
-      
-      toast({
-        title: "Success",
-        description: "UPI payment option has been saved",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save UPI ID",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingUpi(false);
-    }
-  };
-
-  // For now, we'll allow any authenticated user to access the admin page
-  // In a production environment, you would check for admin privileges
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Alert className="w-full max-w-md">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-            You need to be logged in to access this page.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
+  const stats = [
+    { label: "Users", value: overview.data?.users, icon: Users },
+    { label: "Jobs", value: overview.data?.jobs, icon: BriefcaseBusiness },
+    { label: "Open reports", value: overview.data?.openReports, icon: Flag },
+  ];
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-      
-      <Tabs defaultValue="data-management" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="data-management">Data Management</TabsTrigger>
-          <TabsTrigger value="payment-options">Payment Options</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="data-management" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl text-red-600">Danger Zone</CardTitle>
-              <CardDescription>
-                Actions here can permanently delete data and cannot be undone.
-              </CardDescription>
+    <main className="container mx-auto min-h-screen px-4 py-8">
+      <div className="mb-8 flex items-center gap-3">
+        <ShieldCheck className="h-8 w-8 text-primary" aria-hidden="true" />
+        <div>
+          <h1 className="text-3xl font-bold">Admin dashboard</h1>
+          <p className="text-muted-foreground">Review marketplace activity and moderation reports.</p>
+        </div>
+      </div>
+
+      <section className="mb-8 grid gap-4 sm:grid-cols-3" aria-label="Marketplace overview">
+        {stats.map(({ label, value, icon: Icon }) => (
+          <Card key={label}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">{label}</CardTitle>
+              <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
             </CardHeader>
             <CardContent>
-              {isDeletionComplete ? (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertTitle>Success</AlertTitle>
-                  <AlertDescription>
-                    All user registration data has been deleted successfully.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <div className="mb-4">
-                    <Label htmlFor="confirm-delete">
-                      Type <span className="font-bold">DELETE ALL</span> to confirm:
-                    </Label>
-                    <Input
-                      id="confirm-delete"
-                      value={deleteConfirmation}
-                      onChange={(e) => setDeleteConfirmation(e.target.value)}
-                      className="mt-1"
-                    />
+              {overview.isLoading ? <Skeleton className="h-9 w-16" /> : <p className="text-3xl font-bold">{value ?? 0}</p>}
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
+      <section className="mb-10" aria-labelledby="verifications-heading">
+        <h2 id="verifications-heading" className="mb-4 flex items-center gap-2 text-2xl font-semibold">
+          <FileCheck2 className="h-5 w-5" aria-hidden="true" /> Identity verifications
+        </h2>
+        {verifications.isLoading ? (
+          <Skeleton className="h-28 w-full" />
+        ) : verifications.isError ? (
+          <p className="rounded-md border border-destructive/30 p-4 text-destructive">Verifications could not be loaded.</p>
+        ) : verifications.data?.length ? (
+          <div className="space-y-3">
+            {verifications.data.map((verification) => (
+              <Card key={verification.id}>
+                <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <strong>User #{verification.userId}</strong>
+                      <Badge variant="outline">{verification.status}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{verification.documentType.replaceAll("_", " ")}</p>
+                    <a className="text-sm text-primary underline" href={`/api/verification/documents/${verification.id}`} target="_blank" rel="noreferrer">
+                      Review private document
+                    </a>
                   </div>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteAllUsers}
-                    disabled={isDeleting || deleteConfirmation !== "DELETE ALL"}
-                    className="w-full"
-                  >
-                    {isDeleting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Deleting...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete All User Data
-                      </>
-                    )}
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="payment-options" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>UPI Payment Options</CardTitle>
-              <CardDescription>
-                Configure UPI payment options for the platform.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="upi-id">UPI ID</Label>
-                  <Input
-                    id="upi-id"
-                    placeholder="username@bankname"
-                    value={upiId}
-                    onChange={(e) => setUpiId(e.target.value)}
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Enter your UPI ID to receive payments directly.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={handleSaveUpiId}
-                disabled={isSavingUpi || !upiId.trim()}
-              >
-                {isSavingUpi ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save UPI Settings"
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                  {verification.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => reviewVerification.mutate({ id: verification.id, status: "verified" })}>Approve</Button>
+                      <Button size="sm" variant="destructive" onClick={() => reviewVerification.mutate({ id: verification.id, status: "rejected" })}>Reject</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-md border p-8 text-center text-muted-foreground">No identity verifications submitted.</p>
+        )}
+      </section>
+
+      <section aria-labelledby="reports-heading">
+        <h2 id="reports-heading" className="mb-4 text-2xl font-semibold">Moderation reports</h2>
+        {reports.isLoading ? (
+          <div className="space-y-3"><Skeleton className="h-28 w-full" /><Skeleton className="h-28 w-full" /></div>
+        ) : reports.isError ? (
+          <p className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-destructive">
+            Reports could not be loaded.
+          </p>
+        ) : reports.data?.length ? (
+          <div className="space-y-3">
+            {reports.data.map((report) => (
+              <Card key={report.id}>
+                <CardContent className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="mb-1 flex items-center gap-2">
+                      <strong>{report.reason}</strong>
+                      <Badge variant="outline">{report.status}</Badge>
+                    </div>
+                    {report.details && <p className="text-sm text-muted-foreground">{report.details}</p>}
+                    <p className="mt-1 text-xs text-muted-foreground">{new Date(report.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => moderate.mutate({ id: report.id, status: "reviewing" })}>Review</Button>
+                    <Button size="sm" onClick={() => moderate.mutate({ id: report.id, status: "resolved" })}>Resolve</Button>
+                    <Button size="sm" variant="ghost" onClick={() => moderate.mutate({ id: report.id, status: "dismissed" })}>Dismiss</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-md border p-8 text-center text-muted-foreground">No reports need attention.</p>
+        )}
+      </section>
+    </main>
   );
 }

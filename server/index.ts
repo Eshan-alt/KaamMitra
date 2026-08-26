@@ -14,22 +14,24 @@ app.use((req, res, next) => {
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+    const redact = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(redact);
+      if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+        return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+          .filter(([key]) => !["password", "verificationCode", "verificationCodeExpires"].includes(key))
+          .map(([key, child]) => [key, redact(child)]));
+      }
+      return value;
+    };
+    const safeBody = redact(bodyJson);
+    capturedJsonResponse = safeBody as Record<string, any>;
+    return originalResJson.apply(res, [safeBody, ...args]);
   };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
       log(logLine);
     }
   });
@@ -37,13 +39,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Modern ESM entry point
-if (import.meta.url.startsWith('file:')) {
-  try {
-    // Seed the database with initial data
+async function main() {
+  if (process.env.SEED_ON_START === "true" && process.env.NODE_ENV !== "production") {
     await seedDatabase();
-  } catch (error) {
-    console.error("Failed to seed database:", error);
   }
 
   const server = await registerRoutes(app);
@@ -52,8 +50,8 @@ if (import.meta.url.startsWith('file:')) {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    console.error(err);
+    if (!res.headersSent) res.status(status).json({ message });
   });
 
   // importantly only setup vite in development and after
@@ -65,11 +63,15 @@ if (import.meta.url.startsWith('file:')) {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = Number(process.env.PORT) || 5000;
   server.listen(port, '0.0.0.0', () => {
     log(`serving on port ${port}`);
+  });
+}
+
+if (import.meta.url.startsWith("file:")) {
+  void main().catch((error) => {
+    console.error("Server startup failed", error);
+    process.exitCode = 1;
   });
 }

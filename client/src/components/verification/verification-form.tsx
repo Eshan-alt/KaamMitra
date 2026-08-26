@@ -41,11 +41,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const verificationSchema = z.object({
   govtIdType: z.enum(["aadhar_card", "voter_id", "passport", "driving_license", "pan_card"], {
-    required_error: "ID type is required",
+    error: "ID type is required",
   }),
   govtId: z.string().min(1, "Government ID is required"),
   dateOfBirth: z.date({
-    required_error: "Date of birth is required",
+    error: "Date of birth is required",
   }).refine(date => {
     const today = new Date();
     const diff = today.getTime() - date.getTime();
@@ -105,7 +105,7 @@ export function VerificationForm() {
       formData.append("userId", user?.id.toString() || "");
       formData.append("govtIdType", data.govtIdType);
       formData.append("govtId", data.govtId);
-      formData.append("dateOfBirth", data.dateOfBirth.toISOString());
+      formData.append("dateOfBirth", data.dateOfBirth.toISOString().slice(0, 10));
       formData.append("address", data.address);
       
       // Append the document file

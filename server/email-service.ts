@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { storage } from './storage';
 import { User } from '@shared/schema';
+import { randomInt, timingSafeEqual } from "crypto";
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -16,15 +17,14 @@ export async function initEmailService() {
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASSWORD;
 
-  // If no credentials provided, create test account
+  if (process.env.NODE_ENV === "production" && (!user || !pass)) {
+    throw new Error("EMAIL_USER and EMAIL_PASSWORD are required in production");
+  }
+  // A test account is only acceptable for local development.
   if (!user || !pass) {
     console.log('No email credentials provided, creating test account...');
     try {
       const testAccount = await nodemailer.createTestAccount();
-      console.log('Test email account created:', testAccount.user);
-      console.log('Test email password:', testAccount.pass);
-      console.log('Test email SMTP server:', testAccount.smtp.host);
-
       transporter = nodemailer.createTransport({
         host: testAccount.smtp.host,
         port: testAccount.smtp.port,
@@ -47,10 +47,6 @@ export async function initEmailService() {
         user,
         pass,
       },
-      tls: {
-        // Do not fail on invalid certificates
-        rejectUnauthorized: false
-      }
     });
     
     console.log(`Email service initialized with: ${user}`);
@@ -60,8 +56,7 @@ export async function initEmailService() {
 }
 
 export function generateVerificationCode(): string {
-  // Generate a 6-digit verification code
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return randomInt(100000, 1000000).toString();
 }
 
 export async function sendVerificationEmail(user: User): Promise<boolean> {
@@ -79,21 +74,19 @@ export async function sendVerificationEmail(user: User): Promise<boolean> {
     // Generate a verification code
     const code = generateVerificationCode();
     
-    // Set expiration for 24 hours from now
+    // Keep the online guessing window short.
     const expires = new Date();
-    expires.setHours(expires.getHours() + 24);
+    expires.setMinutes(expires.getMinutes() + 15);
     
     // Store the verification code in the database
     await storage.updateUserVerificationCode(user.id, code, expires);
-    
-    console.log(`Generated verification code for user ${user.id}: ${code}`);
     
     // Send the email
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || `"KaamMitra Support" <${process.env.EMAIL_USER}>`,
       to: user.email,
       subject: 'Verify your email address - KaamMitra',
-      text: `Welcome to KaamMitra! Your verification code is: ${code}\n\nThis code will expire in 24 hours.\n\nThank you,\nThe KaamMitra Team`,
+      text: `Welcome to KaamMitra! Your verification code is: ${code}\n\nThis code will expire in 15 minutes.\n\nThank you,\nThe KaamMitra Team`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
           <h2 style="color: #4338ca; text-align: center;">Welcome to KaamMitra!</h2>
@@ -101,7 +94,7 @@ export async function sendVerificationEmail(user: User): Promise<boolean> {
           <div style="text-align: center; margin: 30px 0;">
             <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px; padding: 15px; background-color: #f5f5f5; display: inline-block; border-radius: 5px;">${code}</div>
           </div>
-          <p>This code will expire in 24 hours.</p>
+          <p>This code will expire in 15 minutes.</p>
           <p>If you did not request this verification, please ignore this email.</p>
           <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;" />
           <p style="text-align: center; color: #666; font-size: 12px;">
@@ -110,17 +103,6 @@ export async function sendVerificationEmail(user: User): Promise<boolean> {
         </div>
       `,
     });
-    
-    console.log('Verification email sent:', info.messageId);
-    
-    // If using ethereal, provide preview URL
-    if (info.messageId && info.messageId.includes('ethereal')) {
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      console.log('=====================================================');
-      console.log('EMAIL SENT TO ETHEREAL TEST ACCOUNT');
-      console.log('EMAIL PREVIEW URL: %s', previewUrl);
-      console.log('=====================================================');
-    }
     
     return true;
   } catch (error) {
@@ -158,7 +140,9 @@ export async function verifyEmail(userId: number, code: string): Promise<boolean
     }
     
     // Check if the code matches
-    if (user.verificationCode !== code) {
+    const expected = Buffer.from(user.verificationCode);
+    const supplied = Buffer.from(code);
+    if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) {
       console.error('Invalid verification code');
       return false;
     }

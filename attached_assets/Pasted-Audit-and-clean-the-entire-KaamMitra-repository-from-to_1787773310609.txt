@@ -1,0 +1,202 @@
+Audit and clean the entire KaamMitra repository from top to bottom.
+
+IMPORTANT:
+- Do not change the product idea or UI unnecessarily.
+- Preserve all existing working features.
+- Make the project production-ready and consistent.
+- First inspect the ENTIRE repository and all source files before making changes.
+
+1. REMOVE DUPLICATES:
+- The project contains duplicate JavaScript/TypeScript versions of many files.
+- Standardize the entire project on TypeScript.
+- KEEP .ts and .tsx files.
+- REMOVE obsolete duplicate .js and .jsx files when their .ts/.tsx equivalent is the active implementation.
+- Remove duplicate auth pages, dashboards, verification forms, hooks, lib files, server files, schema files, etc.
+- Do not delete a .js/.jsx file until confirming it is not uniquely used/imported.
+- Update all imports so every import points to the final TypeScript file.
+- Remove old conversion/temporary files that are no longer needed.
+
+2. CLEAN THE PROJECT:
+- Remove unused components.
+- Remove unused imports.
+- Remove dead code.
+- Remove duplicate functions.
+- Remove duplicate API logic.
+- Remove unused dependencies from package.json.
+- Fix all TypeScript errors.
+- Fix all ESLint/runtime/build errors.
+- Fix incorrect path aliases.
+- Fix broken routing.
+- Fix incorrect API calls.
+- Fix missing error handling.
+- Fix inconsistent naming.
+- Fix environment-variable handling.
+- Fix security issues such as exposed secrets, unsafe file uploads, weak validation, insecure sessions, and missing authorization checks.
+- Never expose API keys or database credentials.
+
+3. DATABASE:
+- Review shared/schema.ts completely.
+- Review server/db.ts, storage.ts, migrations and seed files.
+- Remove duplicate schema definitions.
+- Ensure relationships and constraints are correct.
+- Ensure indexes exist where useful.
+- Ensure migrations/database initialization work on a fresh database.
+- Keep PostgreSQL + Drizzle ORM.
+- Make seed data safe and repeatable.
+
+4. AUTHENTICATION:
+- Make registration/login/logout work correctly.
+- Make email verification reliable.
+- Make sessions persistent and secure.
+- Add proper password hashing.
+- Add validation for every auth input.
+- Prevent unauthorized access to worker/employer/admin routes.
+- Ensure role-based authorization is enforced on the server, not only the frontend.
+
+5. CORE KAAMMITRA FEATURES:
+- Worker profiles
+- Employer profiles
+- Worker skills
+- Jobs
+- Job search
+- Location-based matching
+- Job applications
+- Worker/employer dashboards
+- Messaging
+- Notifications
+- Verification
+- Ratings/reviews
+- Trust score
+- Payments
+- Admin dashboard
+- File/document uploads
+
+6. ADD USEFUL FEATURES:
+- Search by skill/category/location.
+- Radius-based nearby worker/job search.
+- Worker availability status.
+- Employer hiring status.
+- Application status pipeline: applied, shortlisted, accepted, rejected, completed.
+- Saved jobs.
+- Favorite workers.
+- In-app notifications.
+- Unread message counts.
+- Job expiry.
+- Worker verification badge.
+- Employer verification badge.
+- Report/block system.
+- Review moderation.
+- Admin user/job/report management.
+- Better dashboard analytics.
+- Job recommendations.
+- Worker recommendations for employers.
+- Profile completion percentage.
+- Location privacy controls.
+- Mobile-first responsive design.
+- Better empty/loading/error states.
+- Pagination for jobs, workers, messages and admin tables.
+
+7. AI:
+- Keep the existing OpenAI integration only where useful.
+- Add AI-assisted job description generation.
+- Add worker/job matching recommendations.
+- Add a chatbot for platform help.
+- Add safeguards, validation and server-side API-key usage.
+- Do not call OpenAI directly from the browser with a secret key.
+
+8. PAYMENTS:
+- Keep Stripe integration but make it secure.
+- Never trust payment status from the frontend.
+- Verify webhook events on the server.
+- Store payment/transaction status properly.
+- Add payment history.
+- Handle failed, cancelled and successful payments.
+
+9. FILE UPLOADS:
+- Validate file type and size.
+- Generate safe filenames.
+- Prevent executable uploads.
+- Store uploads safely.
+- Do not expose sensitive verification documents publicly.
+- Add delete/replace functionality where appropriate.
+
+10. UI/UX:
+- Keep the existing KaamMitra visual identity.
+- Make navigation consistent.
+- Make all pages responsive.
+- Fix broken buttons/links/forms.
+- Add proper loading skeletons.
+- Add toast/error feedback.
+- Improve accessibility.
+- Ensure forms have validation messages.
+- Ensure mobile layouts work correctly.
+
+11. PROJECT STRUCTURE:
+Create a clean structure similar to:
+
+client/
+  src/
+    components/
+    hooks/
+    lib/
+    pages/
+    types/
+
+server/
+  services/
+  middleware/
+  routes/
+  db/
+  utils/
+
+shared/
+  schema.ts
+  types.ts
+
+12. CONFIGURATION:
+- Update package.json scripts so these work:
+  npm install
+  npm run dev
+  npm run build
+  npm run start
+  npm run check
+  npm run db:push
+- Make sure the correct TypeScript entry points are used.
+- Remove obsolete Replit-specific configuration if it is no longer required for the local project.
+- Keep only necessary configuration files.
+
+13. TEST EVERYTHING:
+After changes:
+- Run npm install
+- Run npm run check
+- Run npm run build
+- Run npm run dev
+- Test all major routes.
+- Test registration/login/logout.
+- Test verification.
+- Test worker dashboard.
+- Test employer dashboard.
+- Test job posting/search/application.
+- Test messaging.
+- Test ratings/reviews.
+- Test payments.
+- Test admin.
+- Fix every resulting error.
+
+14. FINAL RESULT:
+At the end give me:
+A. Files deleted
+B. Files merged/replaced
+C. Files created
+D. Dependencies removed
+E. Dependencies added
+F. Features added
+G. Bugs fixed
+H. Environment variables required
+I. Commands to run the project locally
+J. Any remaining issues that require manual configuration
+
+Do NOT just explain what should be changed.
+Actually inspect the repository and make the changes.
+Do not stop after fixing the first error.
+Keep fixing until the project builds successfully and the architecture is clean.

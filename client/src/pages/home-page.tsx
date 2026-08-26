@@ -23,6 +23,8 @@ export default function HomePage() {
         setLocation("/worker-dashboard");
       } else if (user.userType === "employer") {
         setLocation("/employer-dashboard");
+      } else if (user.userType === "admin") {
+        setLocation("/admin-dashboard");
       }
     }
   }, [user, setLocation]);

@@ -1,0 +1,2 @@
+ALTER TABLE "verification_documents" ADD COLUMN "reviewed_by_id" integer;--> statement-breakpoint
+ALTER TABLE "verification_documents" ADD CONSTRAINT "verification_documents_reviewed_by_id_users_id_fk" FOREIGN KEY ("reviewed_by_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

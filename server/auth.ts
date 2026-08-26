@@ -1,12 +1,16 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, type RequestHandler } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
-import { initEmailService, sendVerificationEmail, verifyEmail } from "./email-service";
+import { insertUserSchema } from "@shared/schema";
+import { sendVerificationEmail, verifyEmail } from "./email-service";
+import { z } from "zod";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 declare global {
   namespace Express {
@@ -16,6 +20,32 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
+function rateLimit(windowMs: number, max: number, scope: (req: Parameters<RequestHandler>[0]) => string): RequestHandler {
+  return async (req, res, next) => {
+    try {
+      const key = scope(req);
+      const resetAt = new Date(Date.now() + windowMs);
+      const result = await db.execute(sql`
+        INSERT INTO auth_rate_limits ("key", "count", "reset_at")
+        VALUES (${key}, 1, ${resetAt})
+        ON CONFLICT ("key") DO UPDATE SET
+          "count" = CASE WHEN auth_rate_limits.reset_at <= now() THEN 1 ELSE auth_rate_limits.count + 1 END,
+          "reset_at" = CASE WHEN auth_rate_limits.reset_at <= now() THEN ${resetAt} ELSE auth_rate_limits.reset_at END
+        RETURNING "count", "reset_at"
+      `);
+      const row = result.rows[0] as { count: number; reset_at: Date };
+      if (Number(row.count) > max) {
+        const retryAt = new Date(row.reset_at).getTime();
+        res.setHeader("Retry-After", Math.max(1, Math.ceil((retryAt - Date.now()) / 1000)));
+        return res.status(429).json({ message: "Too many attempts. Please try again later." });
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
@@ -24,16 +54,17 @@ async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   const [hashed, salt] = stored.split(".");
+  if (!hashed || !salt || !/^[a-f0-9]{128}$/i.test(hashed) || !/^[a-f0-9]{32}$/i.test(salt)) return false;
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  return hashedBuf.length === suppliedBuf.length && timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
 export function setupAuth(app: Express) {
-  // Initialize email service
-  initEmailService();
-  
-  const sessionSecret = process.env.SESSION_SECRET || "kaammitra-session-secret";
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error("SESSION_SECRET must be set to a random value of at least 32 characters");
+  }
   
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
@@ -41,7 +72,10 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     }
   };
 
@@ -53,7 +87,11 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
+        const normalizedUsername = typeof username === "string" ? username.trim().toLowerCase() : "";
+        if (!normalizedUsername || typeof password !== "string" || password.length > 128) {
+          return done(null, false, { message: "Incorrect username or password" });
+        }
+        const user = await storage.getUserByUsername(normalizedUsername);
         if (!user) {
           return done(null, false, { message: "Incorrect username or password" });
         }
@@ -73,49 +111,54 @@ export function setupAuth(app: Express) {
   
   passport.deserializeUser(async (id: unknown, done) => {
     try {
-      console.log("Deserializing user ID:", id, "type:", typeof id);
-      
-      // Ensure ID is a number
-      const userId = typeof id === 'number' ? id : parseInt(id as string);
-      
-      if (isNaN(userId)) {
-        console.error("Invalid user ID during deserialization:", id);
+      const userId = typeof id === "number" ? id : Number(id);
+      if (!Number.isSafeInteger(userId) || userId < 1) {
         return done(new Error("Invalid user ID"));
       }
-      
       const user = await storage.getUser(userId);
-      console.log("Deserialized user:", user ? "Found" : "Not found");
       done(null, user);
     } catch (error) {
-      console.error("Error deserializing user:", error);
       done(error);
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  const byIp = (req: Parameters<RequestHandler>[0]) => req.ip || req.socket.remoteAddress || "unknown";
+  const authLimit = rateLimit(15 * 60_000, 10, byIp);
+  const registrationLimit = rateLimit(60 * 60_000, 5, byIp);
+  const verificationLimit = rateLimit(15 * 60_000, 8, (req) => `${byIp(req)}:${req.user?.id ?? "anonymous"}`);
+  const resendLimit = rateLimit(60 * 60_000, 3, (req) => `${byIp(req)}:${req.user?.id ?? "anonymous"}`);
+
+  app.post("/api/register", registrationLimit, async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
-      
+      const registrationSchema = insertUserSchema.extend({
+        primarySkill: z.string().trim().min(2).max(100).optional(),
+        description: z.string().trim().max(1000).optional(),
+      }).superRefine((value, ctx) => {
+        if (value.userType === "worker" && !value.primarySkill) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["primarySkill"], message: "Primary skill is required for workers" });
+        }
+      });
+      const payload = registrationSchema.parse(req.body);
+      const existingUser = await storage.getUserByUsername(payload.username);
+
       if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
+        return res.status(409).json({ message: "Username already exists" });
       }
-      
-      // Validate email is required
-      if (!req.body.email) {
-        return res.status(400).json({ message: "Email is required for registration" });
+      if (await storage.getUserByEmail(payload.email)) {
+        return res.status(409).json({ message: "Email already exists" });
       }
 
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
+        ...payload,
+        password: await hashPassword(payload.password),
       });
 
       // Create worker profile if userType is worker
-      if (user.userType === "worker" && req.body.primarySkill) {
+      if (user.userType === "worker" && payload.primarySkill) {
         await storage.createWorkerProfile({
           userId: user.id,
           primarySkill: req.body.primarySkill,
-          description: req.body.description || "",
+          description: payload.description || "",
           isAvailable: true
         });
       }
@@ -137,35 +180,30 @@ export function setupAuth(app: Express) {
         if (err) return next(err);
         
         // Return user without password
-        const { password, ...userWithoutPassword } = user;
+        const userWithoutPassword = publicUser(user);
         res.status(201).json({
           ...userWithoutPassword,
           message: "Registration successful. Please check your email for a verification code."
         });
       });
     } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ message: "Invalid registration data", errors: error.issues });
       next(error);
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+  app.post("/api/login", authLimit, (req, res, next) => {
+    const input = z.object({ username: z.string().trim().toLowerCase().min(3).max(32), password: z.string().min(1).max(128) }).safeParse(req.body);
+    if (!input.success) return res.status(400).json({ message: "Invalid login data" });
+    req.body.username = input.data.username;
+    passport.authenticate("local", (err: Error | null, user: SelectUser | false, info?: { message?: string }) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: info?.message || "Authentication failed" });
 
       req.login(user, (loginErr) => {
         if (loginErr) return next(loginErr);
         
-        // Log user ID to debug session issues
-        console.log("User logged in successfully:", {
-          id: user.id,
-          username: user.username,
-          idType: typeof user.id
-        });
-        
-        // Return user without password
-        const { password, ...userWithoutPassword } = user;
-        return res.status(200).json(userWithoutPassword);
+        return res.status(200).json(publicUser(user));
       });
     })(req, res, next);
   });
@@ -179,24 +217,19 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
+      return res.json(null);
     }
     
     // Return user without password
-    const { password, ...userWithoutPassword } = req.user;
-    res.json(userWithoutPassword);
+    res.json(publicUser(req.user));
   });
   
   // Email verification endpoint
-  app.post("/api/verify-email", async (req, res, next) => {
+  app.post("/api/verify-email", verificationLimit, async (req, res, next) => {
     try {
-      const { userId, code } = req.body;
-      
-      if (!userId || !code) {
-        return res.status(400).json({ message: "User ID and verification code are required" });
-      }
-      
-      const isVerified = await verifyEmail(parseInt(userId), code);
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+      const { code } = z.object({ code: z.string().regex(/^\d{6}$/) }).parse(req.body);
+      const isVerified = await verifyEmail(req.user.id, code);
       
       if (isVerified) {
         return res.status(200).json({ 
@@ -215,7 +248,7 @@ export function setupAuth(app: Express) {
   });
   
   // Resend verification email endpoint
-  app.post("/api/resend-verification", async (req, res, next) => {
+  app.post("/api/resend-verification", resendLimit, async (req, res, next) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -245,4 +278,9 @@ export function setupAuth(app: Express) {
       next(error);
     }
   });
+}
+
+function publicUser(user: SelectUser) {
+  const { password: _password, verificationCode: _code, verificationCodeExpires: _expires, ...safeUser } = user;
+  return safeUser;
 }

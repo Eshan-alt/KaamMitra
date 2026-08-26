@@ -22,7 +22,7 @@ KaamMitra addresses the challenge of connecting skilled daily wage workers (like
 
 ## Technology Stack
 
-- **Frontend**: React with TypeScript (converted to JavaScript)
+- **Frontend**: React with TypeScript
 - **Backend**: Node.js with Express
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: Passport.js with express-session
@@ -41,7 +41,7 @@ For detailed instructions on setting up the project locally, see the [Local Depl
 2. Copy `.env.example` to `.env` and fill in your credentials
 3. Install dependencies: `npm install`
 4. Set up the database: `npm run db:push`
-5. Start the development server: `node server/index.js`
+5. Start the development server: `npm run dev`
 
 ## Project Structure
 
@@ -52,12 +52,12 @@ For detailed instructions on setting up the project locally, see the [Local Depl
 │   │   ├── hooks/         # Custom React hooks
 │   │   ├── lib/           # Utility functions
 │   │   ├── pages/         # Page components
-│   │   └── App.jsx        # Main application component
+│   │   └── App.tsx        # Main application component
 ├── server/                # Backend code
-│   ├── auth.js            # Authentication logic
-│   ├── db.js              # Database connection
-│   ├── email-service.js   # Email verification service
-│   ├── index.js           # Express server entry point
+│   ├── auth.ts            # Authentication logic
+│   ├── db.ts              # Database connection
+│   ├── email-service.ts   # Email verification service
+│   ├── index.ts           # Express server entry point
 │   ├── routes.js          # API route definitions
 │   ├── seed.js            # Database seeding
 │   ├── storage.js         # Data access layer
@@ -85,7 +85,7 @@ The codebase has been converted from TypeScript to JavaScript using ES module sy
 The application uses Drizzle ORM with PostgreSQL. Key database components:
 
 1. Schema definitions in `shared/schema.js`
-2. Database connection in `server/db.js`
+2. Database connection in `server/db.ts`
 3. Data access layer in `server/storage.js`
 
 ### Authentication Flow

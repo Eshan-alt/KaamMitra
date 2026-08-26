@@ -9,7 +9,7 @@ export function CTASection() {
         <p className="max-w-2xl mx-auto mb-6">No app download needed. Connect through WhatsApp and find work or workers in your area.</p>
         
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-          <Link href="/auth?tab=register">
+          <Link href="/register">
             <Button className="bg-[#25D366] hover:bg-[#1da851] text-white px-6 py-6 h-auto">
               <span className="material-icons mr-2">whatsapp</span>
               <span>Sign Up Now</span>

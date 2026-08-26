@@ -9,6 +9,7 @@ type WorkerWithUser = WorkerProfile & { user: User };
 
 export function FeaturedWorkers() {
   const [category, setCategory] = useState("all");
+  const [showAllWorkers, setShowAllWorkers] = useState(false);
 
   // Fetch top rated workers
   const { data: workers, isLoading } = useQuery<WorkerWithUser[]>({
@@ -17,8 +18,9 @@ export function FeaturedWorkers() {
 
   // Filter workers based on selected category
   const filteredWorkers = workers?.filter((worker) => {
-    return category === "all" || worker.primarySkill === category;
+    return category === "all" || worker.primarySkill.toLowerCase() === category;
   }) || [];
+  const visibleWorkers = showAllWorkers ? filteredWorkers : filteredWorkers.slice(0, 4);
 
   const categories = [
     { value: "all", label: "All Workers" },
@@ -55,7 +57,7 @@ export function FeaturedWorkers() {
           {isLoading ? (
             // Skeleton loading state
             Array(4).fill(0).map((_, index) => (
-              <div key={index} className="bg-neutral-100 rounded-lg shadow-sm overflow-hidden">
+              <div key={`skeleton-${index}`} className="bg-neutral-100 rounded-lg shadow-sm overflow-hidden">
                 <div className="p-4 flex flex-col items-center">
                   <Skeleton className="w-20 h-20 rounded-full mb-3" />
                   <Skeleton className="h-6 w-32 mb-1" />
@@ -68,8 +70,8 @@ export function FeaturedWorkers() {
               </div>
             ))
           ) : filteredWorkers.length > 0 ? (
-            filteredWorkers.map((worker) => (
-              <div key={worker.id} className="bg-neutral-100 rounded-lg shadow-sm overflow-hidden">
+              visibleWorkers.map((worker) => (
+              <div key={worker.user.id} className="bg-neutral-100 rounded-lg shadow-sm overflow-hidden">
                 <div className="p-4 flex flex-col items-center">
                   <div className="w-20 h-20 rounded-full bg-primary text-white flex items-center justify-center text-xl font-bold mb-3">
                     {worker.user.fullName.charAt(0)}
@@ -109,11 +111,19 @@ export function FeaturedWorkers() {
           )}
         </div>
         
-        <div className="mt-8 text-center">
-          <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-            View More Workers
-          </Button>
-        </div>
+        {filteredWorkers.length > 4 && (
+          <div className="mt-8 text-center">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary hover:text-white"
+              onClick={() => setShowAllWorkers((current) => !current)}
+              aria-expanded={showAllWorkers}
+            >
+              {showAllWorkers ? "Show Fewer Workers" : "View More Workers"}
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

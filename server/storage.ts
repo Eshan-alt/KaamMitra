@@ -19,6 +19,7 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   getUsers(userType?: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUserVerification(id: number, verificationStatus: "not_submitted" | "pending" | "verified" | "rejected"): Promise<User | undefined>;
@@ -45,7 +46,7 @@ export interface IStorage {
   getApplicationsByWorker(workerId: number): Promise<(Application & { job: Job })[]>;
   getApplicationsByJob(jobId: number): Promise<(Application & { worker: User })[]>;
   createApplication(application: InsertApplication): Promise<Application>;
-  updateApplicationStatus(id: number, status: "pending" | "accepted" | "rejected" | "completed"): Promise<Application | undefined>;
+  updateApplicationStatus(id: number, status: "pending" | "shortlisted" | "accepted" | "rejected" | "completed"): Promise<Application | undefined>;
   
   // Rating operations
   getRatingsByWorker(workerId: number): Promise<Rating[]>;
@@ -113,6 +114,10 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find((user) => user.email.toLowerCase() === email.toLowerCase());
+  }
+
   async getUsers(userType?: string): Promise<User[]> {
     if (userType) {
       return Array.from(this.users.values()).filter(user => user.userType === userType);
@@ -123,7 +128,7 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
     const createdAt = new Date();
-    const user: User = { ...insertUser, id, createdAt };
+    const user: User = { ...insertUser, id, createdAt, locationVisible: insertUser.locationVisible ?? true, isHiring: insertUser.isHiring ?? false, dateOfBirth: null, age: null, isVerified: false, verificationStatus: "not_submitted", emailVerified: false, verificationCode: null, verificationCodeExpires: null };
     this.users.set(id, user);
     return user;
   }
@@ -188,7 +193,9 @@ export class MemStorage implements IStorage {
       id, 
       averageRating: 0, 
       totalRatings: 0,
-      verified: false 
+      verified: false,
+      description: profile.description ?? null,
+      isAvailable: profile.isAvailable ?? true,
     };
     this.workerProfiles.set(id, workerProfile);
     return workerProfile;
@@ -244,7 +251,7 @@ export class MemStorage implements IStorage {
         jobs = jobs.filter(job => job.category === filters.category);
       }
       if (filters.location) {
-        jobs = jobs.filter(job => job.location.toLowerCase().includes(filters.location.toLowerCase()));
+        jobs = jobs.filter(job => job.location.toLowerCase().includes(filters.location!.toLowerCase()));
       }
       if (filters.isActive !== undefined) {
         jobs = jobs.filter(job => job.isActive === filters.isActive);
@@ -264,7 +271,7 @@ export class MemStorage implements IStorage {
   async createJob(insertJob: InsertJob): Promise<Job> {
     const id = this.jobIdCounter++;
     const createdAt = new Date();
-    const job: Job = { ...insertJob, id, createdAt, isActive: true };
+    const job: Job = { ...insertJob, id, createdAt, isActive: true, duration: insertJob.duration ?? null, expiresAt: insertJob.expiresAt ?? null };
     this.jobs.set(id, job);
     return job;
   }
@@ -322,7 +329,7 @@ export class MemStorage implements IStorage {
     return application;
   }
 
-  async updateApplicationStatus(id: number, status: "pending" | "accepted" | "rejected" | "completed"): Promise<Application | undefined> {
+  async updateApplicationStatus(id: number, status: "pending" | "shortlisted" | "accepted" | "rejected" | "completed"): Promise<Application | undefined> {
     const application = this.applications.get(id);
     if (!application) return undefined;
     
@@ -341,7 +348,7 @@ export class MemStorage implements IStorage {
   async createRating(insertRating: InsertRating): Promise<Rating> {
     const id = this.ratingIdCounter++;
     const createdAt = new Date();
-    const rating: Rating = { ...insertRating, id, createdAt };
+    const rating: Rating = { ...insertRating, id, createdAt, comment: insertRating.comment ?? null };
     this.ratings.set(id, rating);
     
     // Update worker profile average rating
@@ -376,10 +383,11 @@ export class MemStorage implements IStorage {
       userId: document.userId,
       documentType: document.documentType,
       documentNumber: document.documentNumber,
-      documentImageUrl: document.documentImageUrl,
+      documentImageUrl: document.documentImageUrl ?? null,
       verificationNotes: "",
       submittedAt: now,
-      reviewedAt: null
+      reviewedAt: null,
+      reviewedById: null,
     };
   }
   
@@ -438,7 +446,7 @@ export class MemStorage implements IStorage {
     const id = this.conversationIdCounter++;
     const now = new Date();
     const newConversation: Conversation = { 
-      ...conversation, 
+      ...conversation, jobId: conversation.jobId ?? null,
       id, 
       lastMessageAt: now, 
       createdAt: now 
@@ -471,7 +479,7 @@ export class MemStorage implements IStorage {
     const id = this.messageIdCounter++;
     const sentAt = new Date();
     const newMessage: Message = { 
-      ...message, 
+      ...message, metadata: message.metadata ?? {},
       id, 
       sentAt, 
       readAt: null 
@@ -536,7 +544,7 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      return result.rows[0];
+      return result.rows[0] as User;
     } catch (error) {
       console.error("Error in getUser:", error);
       throw error;
@@ -565,11 +573,16 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      return result.rows[0];
+      return result.rows[0] as User;
     } catch (error) {
       console.error("Error in getUserByUsername:", error);
       throw error;
     }
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
   }
 
   async getUsers(userType?: string): Promise<User[]> {
@@ -587,7 +600,7 @@ export class DatabaseStorage implements IStorage {
           createdAt: users.createdAt
         })
         .from(users)
-        .where(eq(users.userType, userType));
+        .where(eq(users.userType, userType as "worker" | "employer")) as unknown as User[];
       }
       
       return await db.select({
@@ -601,7 +614,7 @@ export class DatabaseStorage implements IStorage {
         location: users.location,
         createdAt: users.createdAt
       })
-      .from(users);
+      .from(users) as unknown as User[];
     } catch (error) {
       console.error("Error in getUsers:", error);
       throw error;
@@ -635,7 +648,7 @@ export class DatabaseStorage implements IStorage {
           verification_code_expires as "verificationCodeExpires"
       `);
       
-      return result.rows[0];
+      return result.rows[0] as User;
     } catch (error) {
       console.error("Error in createUser:", error);
       throw error;
@@ -717,24 +730,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getJobs(filters?: {category?: string, location?: string, isActive?: boolean}): Promise<(Job & { employer: User })[]> {
-    let query = db.select().from(jobs);
-    
-    if (filters) {
-      if (filters.category) {
-        query = query.where(eq(jobs.category, filters.category));
-      }
-      
-      if (filters.location) {
-        query = query.where(like(jobs.location, `%${filters.location}%`));
-      }
-      
-      if (filters.isActive !== undefined) {
-        query = query.where(eq(jobs.isActive, filters.isActive));
-      }
-    }
-    
-    query = query.orderBy(desc(jobs.createdAt));
-    const jobsList = await query;
+    const conditions = [];
+    if (filters?.category) conditions.push(eq(jobs.category, filters.category));
+    if (filters?.location) conditions.push(like(jobs.location, `%${filters.location}%`));
+    if (filters?.isActive !== undefined) conditions.push(eq(jobs.isActive, filters.isActive));
+    const jobsList = await db.select().from(jobs)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(jobs.createdAt));
     
     return Promise.all(
       jobsList.map(async (job) => {
@@ -806,6 +808,7 @@ export class DatabaseStorage implements IStorage {
                   duration: null,
                   employerId: 0,
                   isActive: false,
+                  expiresAt: null,
                   createdAt: new Date()
                 } 
               };
@@ -826,6 +829,7 @@ export class DatabaseStorage implements IStorage {
                 duration: null,
                 employerId: 0,
                 isActive: false,
+                expiresAt: null,
                 createdAt: new Date()
               } 
             };
@@ -859,7 +863,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateApplicationStatus(id: number, status: "pending" | "accepted" | "rejected" | "completed"): Promise<Application | undefined> {
+  async updateApplicationStatus(id: number, status: "pending" | "shortlisted" | "accepted" | "rejected" | "completed"): Promise<Application | undefined> {
     const result = await db.update(applications)
       .set({ status })
       .where(eq(applications.id, id))

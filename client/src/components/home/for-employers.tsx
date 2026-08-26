@@ -53,7 +53,7 @@ export function ForEmployers() {
               ))}
             </div>
             
-            <Link href="/auth?tab=register&type=employer" className="inline-block mt-8 bg-[#0066cc] text-white font-medium py-3 px-6 rounded hover:bg-[#0052a3] transition-colors duration-300 flex items-center">
+            <Link href="/register?type=employer" className="inline-block mt-8 bg-[#0066cc] text-white font-medium py-3 px-6 rounded hover:bg-[#0052a3] transition-colors duration-300 flex items-center">
               Sign Up as an Employer
               <span className="material-icons ml-2">arrow_forward</span>
             </Link>

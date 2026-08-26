@@ -33,20 +33,28 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
-  const [location, setLocation] = useLocation();
+export default function Login() {
+  const [, setLocation] = useLocation();
   const { user, loginMutation } = useAuth();
   
-  // If user is already logged in, redirect to appropriate dashboard
+  // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      if (user.userType === "worker") {
-        setLocation("/worker-dashboard");
-      } else {
-        setLocation("/employer-dashboard");
-      }
+      const redirectPath = user.userType === "worker" ? "/worker-dashboard" : "/employer-dashboard";
+      setLocation(redirectPath);
     }
   }, [user, setLocation]);
+
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-gray-600">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
   
   // Login form setup
   const loginForm = useForm<LoginFormValues>({
@@ -129,23 +137,23 @@ export default function LoginPage() {
             {/* Right Side - Hero */}
             <div className="hidden lg:block p-6">
               <h1 className="text-4xl font-bold mb-6 text-primary">
-                Welcome Back to WorkBuddy
+                Welcome Back to Kaam Mitra
               </h1>
               <div className="space-y-6">
                 <div className="flex items-start">
-                  <span className="material-icons text-green-500 mr-3">check_circle</span>
+                  <div className="text-green-500 mr-3">✓</div>
                   <p className="text-lg">
                     Access your dashboard to manage your jobs and applications
                   </p>
                 </div>
                 <div className="flex items-start">
-                  <span className="material-icons text-green-500 mr-3">check_circle</span>
+                  <div className="text-green-500 mr-3">✓</div>
                   <p className="text-lg">
                     Check your messages and notifications
                   </p>
                 </div>
                 <div className="flex items-start">
-                  <span className="material-icons text-green-500 mr-3">check_circle</span>
+                  <div className="text-green-500 mr-3">✓</div>
                   <p className="text-lg">
                     View your profile and update your information
                   </p>

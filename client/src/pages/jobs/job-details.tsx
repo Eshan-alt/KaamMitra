@@ -269,7 +269,7 @@ export default function JobDetails() {
                     <p className="mb-4 text-neutral-700">
                       You need to be logged in as a worker to apply for this job.
                     </p>
-                    <Button onClick={() => setLocation("/auth?tab=login")}>
+                    <Button onClick={() => setLocation("/login")}>
                       Login to Apply
                     </Button>
                   </div>

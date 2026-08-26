@@ -53,7 +53,7 @@ export function ForWorkers() {
               ))}
             </div>
             
-            <Link href="/auth?tab=register&type=worker" className="inline-block mt-8 bg-primary text-white font-medium py-3 px-6 rounded flex items-center">
+            <Link href="/register?type=worker" className="inline-block mt-8 bg-primary text-white font-medium py-3 px-6 rounded flex items-center">
               Sign Up as a Worker
               <span className="material-icons ml-2">arrow_forward</span>
             </Link>

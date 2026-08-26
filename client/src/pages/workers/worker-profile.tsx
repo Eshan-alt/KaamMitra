@@ -229,7 +229,7 @@ export default function WorkerProfile() {
                       {!isOwnProfile && user?.userType === "employer" && (
                         <Button 
                           className="w-full"
-                          disabled={hasRated}
+                          disabled={Boolean(hasRated)}
                           onClick={() => setIsRatingDialogOpen(true)}
                         >
                           {hasRated ? "Already Rated" : "Rate This Worker"}
