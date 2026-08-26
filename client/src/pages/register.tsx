@@ -156,7 +156,7 @@ export default function Register() {
                         <FormItem>
                           <FormLabel>Full Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your full name" {...field} />
+                            <Input autoComplete="name" placeholder="Enter your full name" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -170,7 +170,7 @@ export default function Register() {
                           <FormItem>
                             <FormLabel>Username</FormLabel>
                             <FormControl>
-                              <Input placeholder="Choose a username" {...field} />
+                            <Input autoComplete="username" placeholder="Choose a username" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -183,7 +183,7 @@ export default function Register() {
                           <FormItem>
                             <FormLabel>WhatsApp Number</FormLabel>
                             <FormControl>
-                              <Input placeholder="Your WhatsApp number" {...field} />
+                            <Input autoComplete="tel" placeholder="Your WhatsApp number" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -197,7 +197,7 @@ export default function Register() {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your email" {...field} required />
+                            <Input autoComplete="email" placeholder="Enter your email" {...field} required />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

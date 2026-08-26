@@ -658,9 +658,7 @@ export class DatabaseStorage implements IStorage {
   // Worker profile operations
   async getWorkerProfile(userId: number): Promise<WorkerProfile | undefined> {
     try {
-      console.log("Getting worker profile for userId:", userId);
       const result = await db.select().from(workerProfiles).where(eq(workerProfiles.userId, userId));
-      console.log("Worker profile query result:", result);
       return result[0];
     } catch (error) {
       console.error("Error in getWorkerProfile:", error);
@@ -778,12 +776,9 @@ export class DatabaseStorage implements IStorage {
 
   async getApplicationsByWorker(workerId: number): Promise<(Application & { job: Job })[]> {
     try {
-      console.log("Getting applications for workerId:", workerId);
       const appResults = await db.select()
         .from(applications)
         .where(eq(applications.workerId, workerId));
-      
-      console.log("Application query results:", appResults);
       
       if (appResults.length === 0) {
         return [];
@@ -794,7 +789,6 @@ export class DatabaseStorage implements IStorage {
           try {
             const jobResult = await db.select().from(jobs).where(eq(jobs.id, app.jobId));
             if (jobResult.length === 0) {
-              console.log("No job found for jobId:", app.jobId);
               // Return the application with a default job to avoid errors
               return { 
                 ...app, 
@@ -875,13 +869,11 @@ export class DatabaseStorage implements IStorage {
   // Rating operations
   async getRatingsByWorker(workerId: number): Promise<Rating[]> {
     try {
-      console.log("Getting ratings for workerId:", workerId);
       const result = await db.select()
         .from(ratings)
         .where(eq(ratings.workerId, workerId))
         .orderBy(desc(ratings.createdAt));
       
-      console.log("Ratings query results:", result);
       return result;
     } catch (error) {
       console.error("Error in getRatingsByWorker:", error);

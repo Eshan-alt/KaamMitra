@@ -1,6 +1,30 @@
 import { Link } from "wouter";
+import { FormEvent, useEffect, useState } from "react";
+import { Search, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 export function HeroSection() {
+  const [search, setSearch] = useState("");
+  const [placeholder, setPlaceholder] = useState("Search for a skill, e.g. electrician");
+  const placeholders = ["Search for a skill, e.g. electrician", "Try “plumber near me”", "Find your next local opportunity"];
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setPlaceholder((current) => placeholders[(placeholders.indexOf(current) + 1) % placeholders.length]), 2600);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const handleSearch = (event: FormEvent) => {
+    event.preventDefault();
+    document.getElementById("available-jobs")?.scrollIntoView({ behavior: "smooth" });
+    window.setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>("#available-jobs input");
+      if (input && search) {
+        input.value = search;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }, 350);
+  };
+
   return (
     <section className="relative bg-gradient-to-br from-primary to-purple-700 text-white py-12 md:py-24 overflow-hidden">
       {/* Background decorative elements with improved animations */}
@@ -23,13 +47,18 @@ export function HeroSection() {
             <div className="mb-4 inline-block px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-sm font-medium shadow-lg animate-pulse">
               <span className="mr-2">✨</span> Kaam Mitra - Connecting Talent with Opportunity
             </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold mb-6 bg-gradient-to-r from-white via-blue-100 to-pink-200 bg-clip-text text-transparent drop-shadow-lg leading-tight">
+             <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-4xl md:text-6xl font-extrabold mb-6 bg-gradient-to-r from-white via-blue-100 to-pink-200 bg-clip-text text-transparent drop-shadow-lg leading-tight">
               Find Local Work.<br /> 
               <span className="text-3xl md:text-5xl">Hire Local Talent.</span>
-            </h1>
+            </motion.h1>
             <p className="text-xl mb-8 text-blue-100 max-w-lg leading-relaxed animate-fadeIn">
               Connecting skilled workers with employers in your neighborhood. No middlemen, just professional service and honest work.
             </p>
+            <form onSubmit={handleSearch} className="mb-7 flex max-w-xl items-center gap-2 rounded-2xl border border-white/20 bg-white/15 p-2 shadow-lg backdrop-blur-md">
+              <Search className="ml-3 h-5 w-5 shrink-0 text-white/70" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={placeholder} className="min-w-0 flex-1 bg-transparent px-2 py-3 text-white outline-none placeholder:text-white/60" aria-label="Search local work" />
+              <button type="submit" className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-primary transition hover:bg-blue-50"><Sparkles className="mr-1 inline h-4 w-4" /> Explore</button>
+            </form>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <Link href="/register?type=worker" className="bg-white text-primary font-semibold py-4 px-8 rounded-xl hover:bg-blue-50 transition-all duration-300 flex items-center justify-center shadow-xl hover:shadow-purple-300/50 hover:-translate-y-1 text-lg">

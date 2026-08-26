@@ -1,0 +1,116 @@
+Act as a senior Product Designer + Senior Frontend Engineer.
+
+Redesign KaamMitra's UI/UX to feel like a modern 2026 startup product while preserving all existing functionality.
+
+DO NOT change business logic unless required for UI improvements.
+
+OBJECTIVES:
+- Make the platform look premium, modern, trustworthy and mobile-first.
+- Improve usability, accessibility and conversion rates.
+- Keep the KaamMitra brand and purpose intact.
+
+LANDING PAGE:
+- Create a modern hero section with strong CTA.
+- Add animated search/job discovery section.
+- Add worker and employer onboarding cards.
+- Add platform statistics section.
+- Add testimonials section.
+- Add FAQ section.
+- Add trust/security section.
+- Improve footer design.
+
+DESIGN SYSTEM:
+- Create consistent color palette.
+- Create typography scale.
+- Create spacing system.
+- Create reusable card components.
+- Create reusable buttons.
+- Create reusable badges.
+- Create reusable empty states.
+- Create reusable loading states.
+
+DASHBOARDS:
+- Redesign worker dashboard.
+- Redesign employer dashboard.
+- Add KPI cards.
+- Add charts and analytics.
+- Add activity timeline.
+- Add responsive layouts.
+
+WORKER PROFILE:
+- Profile completion percentage.
+- Skills badges.
+- Verification badge.
+- Experience timeline.
+- Portfolio/gallery section.
+- Availability status.
+- Better layout hierarchy.
+
+EMPLOYER PROFILE:
+- Company branding section.
+- Verification badge.
+- Hiring statistics.
+- Active jobs section.
+- Response rate indicators.
+
+JOB LISTINGS:
+- Modern card design.
+- Better filters.
+- Better search experience.
+- Salary highlighting.
+- Skill tags.
+- Distance indicators.
+- Save job button.
+
+MESSAGING:
+- WhatsApp-style interface.
+- Better conversation list.
+- Unread indicators.
+- Typing indicators UI.
+- Better mobile layout.
+
+NAVIGATION:
+- Modern navbar.
+- Better mobile navigation.
+- Sticky actions.
+- Improved breadcrumbs.
+
+UX IMPROVEMENTS:
+- Better form validation UX.
+- Success/error states.
+- Toast notifications.
+- Empty states.
+- Skeleton loaders.
+- Accessibility improvements.
+- Keyboard navigation.
+
+MOBILE:
+- Optimize every page for mobile.
+- Ensure touch-friendly spacing.
+- Improve responsive breakpoints.
+
+DARK MODE:
+- Add complete dark mode support.
+- Support system theme.
+- Persist user preference.
+
+ANIMATIONS:
+- Use Framer Motion where appropriate.
+- Subtle transitions.
+- Hover effects.
+- Page transitions.
+- Loading animations.
+
+TECHNICAL:
+- Use TailwindCSS best practices.
+- Use shadcn/ui components where possible.
+- Remove inconsistent styling.
+- Remove duplicated UI components.
+- Improve component organization.
+
+FINAL OUTPUT:
+1. List all UI files modified.
+2. List all new UI components created.
+3. List all UX improvements implemented.
+4. List any remaining UI issues.
+5. Give a UI/UX score before and after redesign.

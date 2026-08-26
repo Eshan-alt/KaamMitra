@@ -61,7 +61,7 @@ export function NewConversationDialog({
       if (!searchTerm.trim() || searchTerm.length < 2) return [];
       
       const params = new URLSearchParams({
-        term: searchTerm,
+        query: searchTerm,
         ...(userType ? { userType } : {}),
       });
       
@@ -72,11 +72,12 @@ export function NewConversationDialog({
     enabled: searchTerm.trim().length >= 2,
   });
   
-  // Query to fetch jobs from the user's jobs or applications
+  // Use the public active-job list for the optional related-job selector.
+  // The old /api/my-jobs-and-applications endpoint was never registered.
   const { data: jobs, isLoading: isLoadingJobs } = useQuery({
-    queryKey: ['/api/my-jobs-and-applications'],
+    queryKey: ['/api/jobs'],
     queryFn: async () => {
-      const res = await fetch('/api/my-jobs-and-applications');
+      const res = await fetch('/api/jobs');
       if (!res.ok) throw new Error('Failed to fetch jobs');
       return res.json();
     },

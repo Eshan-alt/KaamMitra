@@ -127,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET worker by ID
-  app.get("/api/workers/:id", async (req, res) => {
+  app.get("/api/workers/:id(\\d+)", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
       
@@ -491,9 +491,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GET worker dashboard data
   app.get("/api/workers/dashboard", async (req, res) => {
     try {
-      console.log("Worker dashboard - authentication check", req.isAuthenticated());
-      console.log("Worker dashboard - user:", req.user);
-      
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Not authenticated" });
       }

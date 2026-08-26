@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
+import { Award, BriefcaseBusiness, CheckCircle2, Loader2, MessageCircle, ShieldCheck, WalletCards } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
+import { NearbyMap } from "@/components/dashboard/nearby-map";
+import { AiMatchingCard } from "@/components/dashboard/ai-matching-card";
 
 type WorkerDashboardData = {
   profile: {
@@ -89,6 +92,12 @@ export default function WorkerDashboard() {
       default: return "bg-gray-100 text-gray-800";
     }
   };
+  const pendingApplications = data?.applications.filter((application) => application.status === "pending").length ?? 0;
+  const acceptedApplications = data?.applications.filter((application) => ["accepted", "completed"].includes(application.status)).length ?? 0;
+  const profileCompletion = Math.min(100, Math.round(
+    [user?.fullName, user?.phone, user?.location, data?.profile.primarySkill, data?.profile.isAvailable].filter(Boolean).length / 5 * 100,
+  ));
+  const nearbyJobs = data?.applications.slice(0, 3).map(({ job }) => job) ?? [];
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -102,64 +111,45 @@ export default function WorkerDashboard() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Card className="border-primary/20 bg-primary/5">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">My Skill</CardTitle>
+                <CardTitle className="flex items-center justify-between text-sm font-medium text-muted-foreground">Profile completion <CheckCircle2 className="h-4 w-4 text-primary" /></CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-primary">{data?.profile.primarySkill || "Not specified"}</p>
+              <CardContent className="space-y-2">
+                <div className="flex items-end justify-between"><p className="text-3xl font-bold text-primary">{profileCompletion}%</p><span className="text-xs text-muted-foreground">Keep it up</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-primary/15"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${profileCompletion}%` }} /></div>
               </CardContent>
             </Card>
-            
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">My Rating</CardTitle>
-              </CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pending applications</CardTitle><BriefcaseBusiness className="h-4 w-4 text-amber-500" /></CardHeader>
               <CardContent>
-                <div className="flex items-center">
-                  <div className="text-2xl font-bold text-primary mr-2">
-                    {data?.profile.averageRating || 0}
-                  </div>
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <span key={i} className="material-icons text-yellow-500">
-                        {i < Math.floor(data?.profile.averageRating || 0) 
-                          ? "star" 
-                          : i === Math.floor(data?.profile.averageRating || 0) && (data?.profile.averageRating || 0) % 1 >= 0.5 
-                            ? "star_half" 
-                            : "star_border"}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="ml-2 text-sm text-neutral-500">
-                    ({data?.profile.totalRatings || 0} {data?.profile.totalRatings === 1 ? "rating" : "ratings"})
-                  </span>
-                </div>
+                <p className="text-3xl font-bold">{pendingApplications}</p><p className="mt-1 text-xs text-muted-foreground">Awaiting employer response</p>
               </CardContent>
             </Card>
-            
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Availability Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <Badge className={data?.profile.isAvailable ? "bg-green-500" : "bg-red-500"}>
-                    {data?.profile.isAvailable ? "Available for Work" : "Not Available"}
-                  </Badge>
-                   <Button
-                     type="button"
-                     size="sm"
-                     variant="outline"
-                     disabled={availabilityMutation.isPending}
-                     onClick={() => availabilityMutation.mutate(!data?.profile.isAvailable)}
-                   >
-                     {availabilityMutation.isPending ? "Updating..." : "Toggle Status"}
-                  </Button>
-                </div>
-              </CardContent>
+              <CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">My rating</CardTitle><Award className="h-4 w-4 text-amber-500" /></CardHeader>
+              <CardContent><p className="text-3xl font-bold">{data?.profile.averageRating?.toFixed(1) || "0.0"}</p><p className="mt-1 text-xs text-muted-foreground">{data?.profile.totalRatings || 0} reviews from completed work</p></CardContent>
             </Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Messages</CardTitle><MessageCircle className="h-4 w-4 text-sky-500" /></CardHeader><CardContent><p className="text-3xl font-bold">—</p><Link href="/messaging" className="mt-1 inline-block text-xs text-primary hover:underline">Open inbox →</Link></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Earnings</CardTitle><WalletCards className="h-4 w-4 text-emerald-500" /></CardHeader><CardContent><p className="text-3xl font-bold">₹—</p><p className="mt-1 text-xs text-muted-foreground">Payments appear after verified payouts</p></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Trust score</CardTitle><ShieldCheck className="h-4 w-4 text-primary" /></CardHeader><CardContent><p className="text-3xl font-bold">{user?.isVerified ? "98" : "72"}</p><Badge className={user?.isVerified ? "mt-1 bg-emerald-500" : "mt-1"}>{user?.isVerified ? "Verified worker" : "Verify to improve"}</Badge></CardContent></Card>
+          </div>
+
+          <div className="mb-8 grid gap-6 lg:grid-cols-2">
+            <AnalyticsPanel />
+            <NearbyMap jobs={nearbyJobs} />
+          </div>
+          <div className="mb-8">
+            <AiMatchingCard primarySkill={data?.profile.primarySkill || "general work"} location={user?.location || "your area"} />
+          </div>
+
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div><h2 className="text-xl font-bold">Your work activity</h2><p className="text-sm text-muted-foreground">{acceptedApplications} accepted or completed applications</p></div>
+            <div className="flex items-center gap-2">
+              <Badge className={data?.profile.isAvailable ? "bg-emerald-500" : "bg-muted text-muted-foreground"}>{data?.profile.isAvailable ? "Available for work" : "Not available"}</Badge>
+              <Button type="button" size="sm" variant="outline" disabled={availabilityMutation.isPending} onClick={() => availabilityMutation.mutate(!data?.profile.isAvailable)}>{availabilityMutation.isPending ? "Updating…" : "Toggle availability"}</Button>
+            </div>
           </div>
           
           <Tabs defaultValue="applications" className="w-full">

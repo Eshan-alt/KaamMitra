@@ -1,0 +1,1 @@
+- [Named API routes](route-ordering.md) — constrain parameter routes or place them after named endpoints so paths like dashboards cannot be treated as IDs.

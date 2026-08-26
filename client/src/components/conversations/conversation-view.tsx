@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMessaging } from '@/hooks/use-messaging';
 import { useAuth } from '@/hooks/use-auth';
-import { ArrowLeft, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Circle, Send, Loader2 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 
 interface ConversationViewProps {
@@ -162,9 +162,10 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
             <AvatarImage src="" alt={otherParticipant.fullName} />
             <AvatarFallback>{getInitials(otherParticipant.fullName)}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
+           <div className="flex flex-col">
             <CardTitle className="text-base font-semibold">{otherParticipant.fullName}</CardTitle>
-            <div className="flex items-center mt-1">
+             <div className="mt-1 flex items-center gap-2">
+               <span className="flex items-center gap-1 text-xs text-emerald-600"><Circle className="h-2 w-2 fill-current" /> Active recently</span>
               <Badge variant={otherParticipant.userType === 'worker' ? 'secondary' : 'outline'} className="text-xs">
                 {otherParticipant.userType === 'worker' ? 'Worker' : 'Employer'}
               </Badge>
@@ -212,13 +213,16 @@ export function ConversationView({ conversationId, onBack }: ConversationViewPro
 
       <CardFooter className="border-t p-3 flex-shrink-0">
         <form onSubmit={handleSendMessage} className="w-full flex gap-2">
-          <Input
+           <Input
             placeholder="Type your message..."
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
             className="flex-grow"
             disabled={isSending}
           />
+           <span className="hidden items-center self-center text-[11px] text-muted-foreground sm:flex" aria-live="polite">
+             {isSending ? "Sending…" : "Private chat"}
+           </span>
           <Button type="submit" disabled={!messageText.trim() || isSending}>
             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>

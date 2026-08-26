@@ -8,6 +8,7 @@ import { FeaturedJobs } from "@/components/home/featured-jobs";
 import { FeaturedWorkers } from "@/components/home/featured-workers";
 import { Testimonials } from "@/components/home/testimonials";
 import { CTASection } from "@/components/home/cta-section";
+import { StatsFaqDownload } from "@/components/home/stats-faq-download";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
@@ -40,6 +41,7 @@ export default function HomePage() {
         <FeaturedJobs />
         <FeaturedWorkers />
         <Testimonials />
+        <StatsFaqDownload />
         <CTASection />
       </main>
       <Footer />

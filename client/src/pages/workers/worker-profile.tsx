@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
+import { Award, BriefcaseBusiness, CheckCircle2, Clock3, Loader2, MapPin, ShieldCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -154,6 +154,10 @@ export default function WorkerProfile() {
   };
   const hasRated = user && ratings.some(rating => rating.employerId === user.id);
   const isOwnProfile = user && user.id === workerUser.id;
+  const profileCompletion = Math.min(100, Math.round(
+    [workerUser.fullName, workerUser.phone, workerUser.location, profile.primarySkill, profile.description].filter(Boolean).length / 5 * 100,
+  ));
+  const skills = [profile.primarySkill, "Reliable", "Local", ...(profile.verified ? ["Identity verified"] : [])];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -196,15 +200,19 @@ export default function WorkerProfile() {
                       </span>
                     </div>
 
-                    <div className="w-full space-y-4">
+                     <div className="w-full space-y-4">
                       <div className="flex items-center justify-center">
                         <Badge className={profile.isAvailable ? "bg-green-500" : "bg-red-500"}>
                           {profile.isAvailable ? "Available for Work" : "Not Available"}
                         </Badge>
                         {profile.verified && (
-                          <Badge className="bg-blue-500 ml-2">Verified</Badge>
+                           <Badge className="ml-2 bg-blue-500"><ShieldCheck className="mr-1 h-3 w-3" /> Verified</Badge>
                         )}
                       </div>
+                       <div className="rounded-xl border bg-muted/30 p-3 text-left">
+                         <div className="mb-2 flex items-center justify-between text-xs font-medium"><span>Profile completion</span><span className="text-primary">{profileCompletion}%</span></div>
+                         <div className="h-2 overflow-hidden rounded-full bg-primary/15"><div className="h-full rounded-full bg-primary" style={{ width: `${profileCompletion}%` }} /></div>
+                       </div>
 
                       <div className="bg-neutral-50 p-4 rounded-lg">
                         <div className="flex items-center text-neutral-700 mb-2">
@@ -245,14 +253,34 @@ export default function WorkerProfile() {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>About</CardTitle>
+                   <CardTitle className="flex items-center gap-2"><BriefcaseBusiness className="h-5 w-5 text-primary" /> About & skills</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-neutral-700">
                     {profile.description || `Experienced ${profile.primarySkill} available for work in ${workerUser.location}.`}
                   </p>
+                   <div className="mt-5 flex flex-wrap gap-2">
+                     {skills.map((skill) => <Badge key={skill} variant="secondary" className="rounded-full px-3 py-1">{skill}</Badge>)}
+                   </div>
                 </CardContent>
               </Card>
+
+               <Card>
+                 <CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="h-5 w-5 text-primary" /> Experience timeline</CardTitle></CardHeader>
+                 <CardContent>
+                   <div className="relative ml-2 border-l-2 border-primary/20 pl-6">
+                     <div className="relative pb-5"><span className="absolute -left-[31px] top-1 rounded-full bg-primary p-1.5 text-primary-foreground"><CheckCircle2 className="h-3 w-3" /></span><p className="font-semibold">{profile.primarySkill} professional</p><p className="mt-1 text-sm text-muted-foreground">Verified skill profile · Available in {workerUser.location}</p></div>
+                     <div className="relative"><span className="absolute -left-[31px] top-1 rounded-full bg-muted p-1.5 text-muted-foreground"><Award className="h-3 w-3" /></span><p className="font-semibold">Kaam Mitra member</p><p className="mt-1 text-sm text-muted-foreground">Building a trusted work history through completed jobs and reviews</p></div>
+                   </div>
+                 </CardContent>
+               </Card>
+
+               <Card>
+                 <CardHeader className="flex flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" /> Portfolio highlights</CardTitle><Badge variant="outline">Gallery</Badge></CardHeader>
+                 <CardContent className="grid grid-cols-3 gap-3">
+                   {["Recent work", "On-site skills", "Quality finish"].map((label, index) => <div key={label} className={`flex aspect-square items-end rounded-xl bg-gradient-to-br ${index === 0 ? "from-primary/70 to-fuchsia-500" : index === 1 ? "from-sky-500 to-primary" : "from-amber-400 to-orange-600"} p-3 text-xs font-semibold text-white shadow-sm`}><span>{label}</span></div>)}
+                 </CardContent>
+               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">

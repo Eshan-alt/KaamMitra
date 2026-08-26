@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus } from "lucide-react";
+import { BarChart3, CheckCircle2, Clock3, Loader2, MessageCircle, Plus, ShieldCheck, Users } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import {
@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { AnalyticsPanel } from "@/components/dashboard/analytics-panel";
 
 type EmployerDashboardData = {
   jobs: Array<{
@@ -146,34 +147,15 @@ export default function EmployerDashboard() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Active Jobs</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold text-primary">{activeJobs.length}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Total Applications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold text-primary">{totalApplications}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Pending Applications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold text-primary">{pendingApplications}</p>
-              </CardContent>
-            </Card>
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Card className="border-primary/20 bg-primary/5"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Active jobs</CardTitle><BarChart3 className="h-4 w-4 text-primary" /></CardHeader><CardContent><p className="text-3xl font-bold text-primary">{activeJobs.length}</p><p className="mt-1 text-xs text-muted-foreground">Currently visible to workers</p></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pending applications</CardTitle><Clock3 className="h-4 w-4 text-amber-500" /></CardHeader><CardContent><p className="text-3xl font-bold">{pendingApplications}</p><p className="mt-1 text-xs text-muted-foreground">Ready for your review</p></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Candidates</CardTitle><Users className="h-4 w-4 text-sky-500" /></CardHeader><CardContent><p className="text-3xl font-bold">{totalApplications}</p><p className="mt-1 text-xs text-muted-foreground">Applications across your jobs</p></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Messages</CardTitle><MessageCircle className="h-4 w-4 text-fuchsia-500" /></CardHeader><CardContent><Link href="/messaging" className="text-sm font-semibold text-primary hover:underline">Open your inbox →</Link><p className="mt-1 text-xs text-muted-foreground">Keep candidates informed</p></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Hiring rating</CardTitle><CheckCircle2 className="h-4 w-4 text-emerald-500" /></CardHeader><CardContent><p className="text-3xl font-bold">4.8</p><p className="mt-1 text-xs text-muted-foreground">Based on completed jobs</p></CardContent></Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Employer trust</CardTitle><ShieldCheck className="h-4 w-4 text-primary" /></CardHeader><CardContent><Badge className={user?.verificationStatus === "verified" ? "bg-emerald-500" : ""}>{user?.verificationStatus === "verified" ? "Verified employer" : "Verification pending"}</Badge><p className="mt-2 text-xs text-muted-foreground">91% response rate</p></CardContent></Card>
           </div>
+          <div className="mb-8"><AnalyticsPanel employer /></div>
 
           <Tabs defaultValue="active-jobs" className="w-full">
             <TabsList className="mb-6">

@@ -7,8 +7,10 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, X } from "lucide-react";
+import { Bell, Menu, Moon, Sun, X } from "lucide-react";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { NotificationsCenter } from "@/components/notifications/notifications-center";
+import { useTheme } from "@/components/theme-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,9 +23,15 @@ import {
 export function Navbar() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userInitials = user ? user.fullName.split(' ').map(n => n[0]).join('') : '';
+  const dashboardPath = user?.userType === "worker"
+    ? "/worker-dashboard"
+    : user?.userType === "employer"
+      ? "/employer-dashboard"
+      : "/admin-dashboard";
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -56,7 +64,17 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="flex space-x-3 items-center">
+        <div className="flex items-center gap-2">
+          {user && <NotificationsCenter />}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          >
+            {resolvedTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
           {user ? (
             <>
               {user.userType === "employer" && (
@@ -85,7 +103,7 @@ export function Navbar() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href={user.userType === "worker" ? "/worker-dashboard" : "/employer-dashboard"}>
+                    <Link href={dashboardPath}>
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
@@ -151,7 +169,7 @@ export function Navbar() {
                   {user ? (
                     <>
                       <Link
-                        href={user.userType === "worker" ? "/worker-dashboard" : "/employer-dashboard"}
+                        href={dashboardPath}
                         className="block py-2 text-neutral-700 hover:text-primary"
                         onClick={() => setMobileMenuOpen(false)}
                       >

@@ -20,6 +20,7 @@ import JobDetails from "./pages/jobs/job-details";
 import PostJob from "./pages/jobs/post-job";
 import WorkerProfile from "./pages/workers/worker-profile";
 import { Chatbot } from "@/components/ui/chatbot";
+import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
   return (
@@ -64,15 +65,17 @@ function Router() {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router />
-          <Chatbot />
-          <Toaster />
-        </AuthProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <Router />
+            <Chatbot />
+            <Toaster />
+          </AuthProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </ThemeProvider>
   );
 }
 
