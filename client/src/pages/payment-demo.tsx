@@ -30,7 +30,7 @@ export default function PaymentDemo() {
             <UpiPayment 
               amount={250} 
               description="Premium Membership"
-              recipientId="workbuddy@ybl"
+              recipientId="kaammitra@ybl"
               onSuccess={handlePaymentSuccess}
               onCancel={handlePaymentCancel}
             />
@@ -46,7 +46,7 @@ export default function PaymentDemo() {
                 <div className="space-y-4">
                   <p>
                     The UPI (Unified Payments Interface) allows you to instantly transfer money between bank accounts
-                    using a mobile device. It's a secure and convenient way to pay for services on WorkBuddy.
+                    using a mobile device. It's a secure and convenient way to pay for services on Kaam Mitra.
                   </p>
                   <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
                     <h3 className="font-medium mb-2">Premium Membership Benefits:</h3>

@@ -13,7 +13,7 @@ export function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi there! I'm WorkBuddy's AI assistant. How can I help you today?",
+      content: "Hi there! I'm Kaam Mitra's AI assistant. How can I help you today?",
       timestamp: new Date(),
     },
   ]);
@@ -28,6 +28,12 @@ export function Chatbot() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  useEffect(() => {
+    const openChat = () => setIsOpen(true);
+    window.addEventListener("open-kaam-mitra-chat", openChat);
+    return () => window.removeEventListener("open-kaam-mitra-chat", openChat);
+  }, []);
 
   const handleUserInput = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,12 +103,13 @@ export function Chatbot() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             className="fixed bottom-20 right-4 w-full sm:w-96 h-[30rem] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden z-50 border-2 border-purple-200"
+            id="kaam-mitra-chat"
           >
             {/* Chat header */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-4 flex justify-between items-center">
               <div className="flex items-center">
                 <MessageSquare className="h-6 w-6 text-white mr-2" />
-                <h3 className="text-white font-semibold">WorkBuddy Assistant</h3>
+                <h3 className="text-white font-semibold">Kaam Mitra Assistant</h3>
               </div>
               <button
                 onClick={() => setIsOpen(false)}

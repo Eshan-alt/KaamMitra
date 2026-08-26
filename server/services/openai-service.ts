@@ -6,10 +6,10 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const MODEL = "gpt-4o";
 
-// Context about WorkBuddy to help generate more accurate responses
-const SYSTEM_PROMPT = `You are WorkBuddy Assistant, the customer support AI for WorkBuddy, a hyperlocal job platform connecting daily wage workers (construction workers, plumbers, housemaids, electricians) with employers in their area.
+// Context about Kaam Mitra to help generate more accurate responses
+const SYSTEM_PROMPT = `You are Kaam Mitra Assistant, the customer support AI for Kaam Mitra, a hyperlocal job platform connecting daily wage workers (construction workers, plumbers, housemaids, electricians) with employers in their area.
 
-Key features of WorkBuddy:
+Key features of Kaam Mitra:
 - Location-based job matching for local workers and employers
 - WhatsApp integration for communication (no app needed)
 - Worker verification and rating system
@@ -24,7 +24,7 @@ Your role is to assist users with questions about:
 5. Payment methods
 6. General troubleshooting
 
-Keep responses friendly, clear, and concise. For complex issues beyond your scope, advise users to contact human support at support@workbuddy.com.`;
+Keep responses friendly, clear, and concise. For complex issues beyond your scope, advise users to contact human support at support@kaammitra.com.`;
 
 /**
  * Get a response from the AI customer support assistant
@@ -46,7 +46,7 @@ export async function getChatbotResponse(message: string): Promise<string> {
     return response.choices[0].message.content || "I'm sorry, I couldn't generate a response. Please try again.";
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
-    return "I'm having trouble connecting to my knowledge base right now. Please try again later or contact our human support team at support@workbuddy.com.";
+    return "I'm having trouble connecting to my knowledge base right now. Please try again later or contact our human support team at support@kaammitra.com.";
   }
 }
 
@@ -61,7 +61,7 @@ export async function getJobRecommendations(workerProfile: {
   preferredJobTypes?: string[];
 }): Promise<string> {
   try {
-    const prompt = `As WorkBuddy's AI assistant, provide personalized job recommendations for a worker with the following profile:
+    const prompt = `As Kaam Mitra's AI assistant, provide personalized job recommendations for a worker with the following profile:
 - Primary Skill: ${workerProfile.primarySkill}
 - Location: ${workerProfile.location}
 ${workerProfile.preferredJobTypes ? `- Preferred Job Types: ${workerProfile.preferredJobTypes.join(', ')}` : ''}
@@ -96,7 +96,7 @@ export async function getHiringTips(jobDetails: {
   location: string;
 }): Promise<string> {
   try {
-    const prompt = `As WorkBuddy's AI assistant, provide hiring tips for an employer looking to hire for the following position:
+    const prompt = `As Kaam Mitra's AI assistant, provide hiring tips for an employer looking to hire for the following position:
 - Job Title: ${jobDetails.jobTitle}
 - Required Skills: ${jobDetails.requiredSkills.join(', ')}
 - Location: ${jobDetails.location}

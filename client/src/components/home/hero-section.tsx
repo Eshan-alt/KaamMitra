@@ -21,7 +21,7 @@ export function HeroSection() {
         <div className="flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 mb-8 md:mb-0">
             <div className="mb-4 inline-block px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-sm font-medium shadow-lg animate-pulse">
-              <span className="mr-2">✨</span> WorkBuddy - Connecting Talent with Opportunity
+              <span className="mr-2">✨</span> Kaam Mitra - Connecting Talent with Opportunity
             </div>
             <h1 className="text-4xl md:text-6xl font-extrabold mb-6 bg-gradient-to-r from-white via-blue-100 to-pink-200 bg-clip-text text-transparent drop-shadow-lg leading-tight">
               Find Local Work.<br /> 

@@ -8,6 +8,7 @@ import { useState } from "react";
 export function FeaturedJobs() {
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("all");
+  const [showAllJobs, setShowAllJobs] = useState(false);
 
   // Fetch jobs data
   const { data: jobs, isLoading } = useQuery<(Job & { employer: { fullName: string } })[]>({
@@ -19,11 +20,14 @@ export function FeaturedJobs() {
     const matchesCategory = category === "all" || job.category === category;
     const matchesLocation = !location || job.location.toLowerCase().includes(location.toLowerCase());
     return matchesCategory && matchesLocation;
-  }).slice(0, 3) || [];
+  }) || [];
+  const visibleJobs = showAllJobs ? filteredJobs : filteredJobs.slice(0, 3);
 
   const handleFindJobs = () => {
-    // This would update the URL with the filters in a real app
-    // For now, we just filter client-side
+    document.getElementById("available-jobs-results")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   const categories = [
@@ -36,7 +40,7 @@ export function FeaturedJobs() {
   ];
 
   return (
-    <section className="py-16 bg-neutral-100">
+    <section id="available-jobs" className="py-16 bg-neutral-100">
       <div className="container mx-auto px-4">
         <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">Available Jobs Near You</h2>
         
@@ -52,6 +56,7 @@ export function FeaturedJobs() {
               onChange={(e) => setLocation(e.target.value)}
             />
             <Button 
+              type="button"
               className="bg-primary text-white"
               onClick={handleFindJobs}
             >
@@ -78,7 +83,7 @@ export function FeaturedJobs() {
         </div>
         
         {/* Job Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="available-jobs-results" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             // Skeleton loading state
             Array(3).fill(0).map((_, index) => (
@@ -107,7 +112,7 @@ export function FeaturedJobs() {
               </div>
             ))
           ) : filteredJobs.length > 0 ? (
-            filteredJobs.map((job) => (
+              visibleJobs.map((job) => (
               <div key={job.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-3">
@@ -130,11 +135,9 @@ export function FeaturedJobs() {
                       </div>
                       <span className="text-sm text-neutral-700">{job.employer.fullName}</span>
                     </div>
-                    <Link href={`/jobs/${job.id}`}>
-                      <a className="flex items-center text-primary hover:underline">
+                    <Link href={`/jobs/${job.id}`} className="flex items-center text-primary hover:underline">
                         <span className="material-icons text-sm mr-1">visibility</span>
                         <span className="text-sm">View Details</span>
-                      </a>
                     </Link>
                   </div>
                 </div>
@@ -147,11 +150,19 @@ export function FeaturedJobs() {
           )}
         </div>
         
-        <div className="mt-8 text-center">
-          <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-            View More Jobs
-          </Button>
-        </div>
+        {filteredJobs.length > 3 && (
+          <div className="mt-8 text-center">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-primary text-primary hover:bg-primary hover:text-white"
+              onClick={() => setShowAllJobs((current) => !current)}
+              aria-expanded={showAllJobs}
+            >
+              {showAllJobs ? "Show Fewer Jobs" : "View More Jobs"}
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

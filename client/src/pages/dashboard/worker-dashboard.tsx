@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type WorkerDashboardData = {
   profile: {
@@ -38,10 +40,32 @@ type WorkerDashboardData = {
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   
   const { data, isLoading } = useQuery<WorkerDashboardData>({
     queryKey: ["/api/workers/dashboard"],
     enabled: !!user,
+  });
+
+  const availabilityMutation = useMutation({
+    mutationFn: async (isAvailable: boolean) => {
+      const response = await apiRequest("PATCH", "/api/workers/profile/availability", { isAvailable });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/workers/dashboard"] });
+      toast({
+        title: "Availability updated",
+        description: "Your work availability has been saved.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Could not update availability",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
   });
   
   if (isLoading) {
@@ -124,8 +148,14 @@ export default function WorkerDashboard() {
                   <Badge className={data?.profile.isAvailable ? "bg-green-500" : "bg-red-500"}>
                     {data?.profile.isAvailable ? "Available for Work" : "Not Available"}
                   </Badge>
-                  <Button size="sm" variant="outline">
-                    Toggle Status
+                   <Button
+                     type="button"
+                     size="sm"
+                     variant="outline"
+                     disabled={availabilityMutation.isPending}
+                     onClick={() => availabilityMutation.mutate(!data?.profile.isAvailable)}
+                   >
+                     {availabilityMutation.isPending ? "Updating..." : "Toggle Status"}
                   </Button>
                 </div>
               </CardContent>

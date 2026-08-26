@@ -8,6 +8,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Menu, X } from "lucide-react";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -38,9 +39,8 @@ export function Navbar() {
     <header className="sticky top-0 z-50 bg-white shadow-md">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/">
-          <div className="flex items-center cursor-pointer">
-            <span className="material-icons text-primary text-3xl mr-2">handyman</span>
-            <h1 className="text-xl font-bold text-primary">WorkBuddy</h1>
+          <div className="cursor-pointer">
+            <BrandLogo />
           </div>
         </Link>
 
@@ -101,14 +101,14 @@ export function Navbar() {
               </DropdownMenu>
             </>
           ) : (
-            <>
-              <Link href="/login" className="hidden md:inline-block">
-                <Button variant="outline">Login</Button>
+            <div className="flex items-center">
+              <Link href="/login">
+                <Button variant="outline" className="mr-2">Login</Button>
               </Link>
               <Link href="/register">
                 <Button>Register</Button>
               </Link>
-            </>
+            </div>
           )}
 
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -124,10 +124,7 @@ export function Navbar() {
             <SheetContent side="right" className="w-[80%] sm:w-[350px]">
               <div className="flex flex-col h-full">
                 <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center">
-                    <span className="material-icons text-primary text-3xl mr-2">handyman</span>
-                    <h1 className="text-xl font-bold text-primary">WorkBuddy</h1>
-                  </div>
+                  <BrandLogo />
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"

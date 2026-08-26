@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Registration successful",
-        description: `Welcome to WorkBuddy, ${user.fullName}!`,
+        description: `Welcome to Kaam Mitra, ${user.fullName}!`,
       });
     },
     onError: (error: Error) => {
